@@ -2,7 +2,7 @@
 name: rhdh-plugin-development
 description: >-
   Build full-stack plugins for Red Hat Developer Hub (RHDH) and Backstage using
-  the New Backend System (v1.8+). Covers backend plugins (createBackendPlugin),
+  the New Backend System (v1.8-1.9+). Covers backend plugins (createBackendPlugin),
   frontend plugins (createPlugin), backend modules (createBackendModule),
   extension points, dynamic plugin packaging with rhdh-cli, Knex/Postgres
   database patterns, permissions, monorepo scaffolding, and Scalprum/Helm
@@ -14,8 +14,10 @@ description: >-
 
 ## Target Platform
 
-- **RHDH v1.8+** using the **New Backend System** (`createBackendPlugin`).
+- **RHDH v1.8–1.9+** using the **New Backend System** (`createBackendPlugin`).
+- RHDH 1.9 is based on **Backstage 1.45.3**.
 - **Dynamic Plugins** packaged with `@red-hat-developer-hub/cli` (rhdh-cli).
+- Deployment via `.tgz` archives or **OCI registry** (`oci://` references, RHDH 1.9+).
 - All `@backstage/*` packages are **peerDependencies** (provided by the host).
 - Logic libraries (e.g., `zod`, `json-rules-engine`) go in **dependencies** (bundled).
 
@@ -113,7 +115,9 @@ devDependencies:
 - Frontend needs `scalprum` block in package.json for Scalprum federation.
 - Backend needs `backstage.role` set to `backend-plugin` or `backend-plugin-module`.
 - Export with: `npx @red-hat-developer-hub/cli@latest plugin export`.
-- Package with: `npm pack ./dist-dynamic --pack-destination .`.
+- Package as `.tgz`: `npm pack ./dist-dynamic --pack-destination .`.
+- Package as OCI (1.9+): `npx @red-hat-developer-hub/cli@latest plugin package --tag <registry>/<name>:<version>`.
+- Deploy via `oci://` references in `dynamic-plugins.yaml` (1.9+). The `!path` suffix is optional for single-plugin packages.
 
 ### Permissions
 

@@ -3,8 +3,12 @@
 ## Overview
 
 RHDH uses **Scalprum** for frontend federation and the **New Backend System** for backend
-plugin discovery. Plugins are packaged as `.tgz` archives and deployed via Helm values
-or `dynamic-plugins.yaml`.
+plugin discovery. Plugins can be deployed in two ways:
+
+- **`.tgz` archives** — hosted on an npm registry or HTTP server (RHDH 1.8+).
+- **OCI artifacts** — pushed to a container registry like Quay.io or ghcr.io (RHDH 1.9+, recommended).
+
+Both methods are configured via Helm values or `dynamic-plugins.yaml`.
 
 ## Package.json Configuration
 
@@ -131,6 +135,47 @@ Root-level convenience scripts:
 }
 ```
 
+## OCI Registry Packaging (RHDH 1.9+)
+
+Starting with RHDH 1.9, the recommended deployment method is OCI artifacts pushed to
+a container registry. This replaces the need for hosting `.tgz` files on an HTTP server.
+
+### Package and Push
+
+```bash
+# Set variables
+export REGISTRY=quay.io/my-org
+export PLUGIN_NAME=plugin-my-plugin-backend
+export VERSION=$(node -p "require('./package.json').version")
+
+# Build + export dynamic
+npm run build && npm run export-dynamic
+
+# Package as OCI and push to registry
+npx @red-hat-developer-hub/cli@latest plugin package \
+  --tag ${REGISTRY}/${PLUGIN_NAME}:${VERSION}
+
+# Push (if not auto-pushed by the CLI)
+podman push ${REGISTRY}/${PLUGIN_NAME}:${VERSION}
+```
+
+### OCI References in Config
+
+```yaml
+plugins:
+  # Single-plugin package (no !path suffix needed in 1.9+)
+  - package: oci://quay.io/my-org/plugin-my-plugin-backend:0.1.0
+    disabled: false
+
+  # Multi-plugin package (specify path)
+  - package: oci://quay.io/my-org/plugin-my-plugin-backend:0.1.0!backstage-plugin-my-plugin-backend
+    disabled: false
+
+  # Use {{inherit}} for version from the RHDH release (Red Hat plugins only)
+  - package: 'oci://registry.access.redhat.com/rhdh/some-plugin:{{inherit}}'
+    disabled: false
+```
+
 ## RHDH Helm Deployment
 
 ### Helm values (`rhdh-helm-values.yaml`)
@@ -141,6 +186,19 @@ global:
     includes:
       - dynamic-plugins.default.yaml
     plugins:
+      # === Option A: OCI registry (RHDH 1.9+, recommended) ===
+      - package: oci://quay.io/my-org/plugin-my-plugin-backend:0.1.0
+        disabled: false
+
+      - package: oci://quay.io/my-org/plugin-my-plugin-backend-module-source:0.1.0
+        disabled: false
+
+      - package: oci://quay.io/my-org/plugin-my-plugin:0.1.0
+        disabled: false
+        pluginConfig:
+          # ... (same pluginConfig as below)
+
+      # === Option B: .tgz over HTTP (RHDH 1.8+) ===
       # Backend plugin
       - package: >-
           https://registry.example.com/@scope/plugin-my-plugin-backend-dynamic/-/plugin-my-plugin-backend-dynamic-0.1.0.tgz
@@ -226,3 +284,15 @@ backend:
 
 7. **Backend migrations** must be copied to `dist/` during build so
    `resolvePackagePath` can find them at runtime.
+
+8. **OCI `!path` suffix (1.9+):** Not required if the OCI package contains
+   only one plugin. Required for multi-plugin packages.
+
+9. **`{{inherit}}` tag (1.9+):** Use when referencing Red Hat-provided OCI
+   images to automatically inherit the version matching the RHDH release.
+
+10. **Extensions Catalog Index (1.9+):** Helm upgrades to 1.9 require
+    additional volume mounts (`extensions-catalog`) and init container env
+    vars (`CATALOG_INDEX_IMAGE`, `CATALOG_ENTITIES_EXTRACT_DIR`). If you
+    override `initContainers`, `extraVolumes`, or `extraVolumeMounts` in
+    custom values, you must manually merge the new defaults.
