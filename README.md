@@ -7,6 +7,7 @@ A collection of reusable [Cursor Agent Skills](https://docs.cursor.com/context/s
 | Skill | Description |
 |-------|-------------|
 | [rhdh-plugin-development](./rhdh-plugin-development/) | Build full-stack plugins for Red Hat Developer Hub (RHDH) and Backstage |
+| [backstage-template-writer](./backstage-template-writer/) | Write and maintain Backstage / RHDH software templates (template.yaml) |
 
 ## What Are Skills?
 
