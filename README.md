@@ -1,56 +1,111 @@
-# AI Agent Skills
+<div align="center">
 
-A collection of reusable [Cursor Agent Skills](https://docs.cursor.com/context/skills) for software engineering workflows.
+# AI Agent Skills for Platform Engineering
 
-## Available Skills
+**Domain knowledge that coding agents don't ship with.**
 
-| Skill | Description |
-|-------|-------------|
-| [rhdh-plugin-development](./rhdh-plugin-development/) | Build full-stack plugins for Red Hat Developer Hub (RHDH) and Backstage |
-| [backstage-template-writer](./backstage-template-writer/) | Write and maintain Backstage / RHDH software templates (template.yaml) |
+[![Agent Skills](https://img.shields.io/badge/Agent-Skills-6E56CF?style=flat-square)](https://github.com/LiorHaim/skills)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-compatible-D97757?style=flat-square&logo=anthropic&logoColor=white)](https://docs.claude.com/en/docs/claude-code/skills)
+[![Cursor](https://img.shields.io/badge/Cursor-compatible-000000?style=flat-square&logo=cursor&logoColor=white)](https://docs.cursor.com/context/skills)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 
-## What Are Skills?
+</div>
 
-Skills are structured markdown files that teach AI coding agents (Cursor, Claude) how to perform specific tasks with domain-specific knowledge. They provide patterns, templates, and rules that the agent wouldn't otherwise know — distilled from real-world project experience.
+---
 
-## Using a Skill
+General purpose coding agents know TypeScript and Kubernetes. They do not know that
+`@backstage/*` packages must be peer dependencies, that scaffolder templates break on
+`v1beta2`, or how a plugin gets packaged for an OCI registry. They guess, and the guesses
+look plausible enough to waste an afternoon.
 
-### In Cursor (Personal)
+These skills close that gap. Each one is distilled from shipping the thing in production:
+the patterns that work, the constraints that bite, and worked examples the agent can copy
+rather than invent.
 
-Copy the skill folder to your personal skills directory:
+## Available skills
+
+| Skill | Covers | Size |
+|---|---|---|
+| **[rhdh-plugin-development](./rhdh-plugin-development/)** | Full stack plugin development for Red Hat Developer Hub and Backstage on the New Backend System: backend plugins, frontend plugins, backend modules, extension points, dynamic plugin packaging, Knex and Postgres patterns, permissions, monorepo scaffolding, Scalprum and Helm configuration | ~43 KB |
+| **[backstage-template-writer](./backstage-template-writer/)** | Authoring and debugging software templates: scaffolder parameters and steps, built in and custom actions, Nunjucks templating, UI field extensions, output links, and dynamic plugin actions | ~35 KB |
+
+## Install
+
+### Claude Code
 
 ```bash
-cp -r rhdh-plugin-development ~/.cursor/skills/
+git clone https://github.com/LiorHaim/skills.git
+cp -r skills/rhdh-plugin-development ~/.claude/skills/
 ```
 
-The skill will be automatically available across all your Cursor projects.
+Available in every session. Claude invokes a skill automatically when the task matches its
+description, or you can ask for it by name.
 
-### In Cursor (Project-Scoped)
+To scope a skill to one project instead, copy it into `.claude/skills/` in that repository
+and commit it, so your whole team gets it.
 
-Copy into a specific project to share with collaborators:
+### Cursor
 
 ```bash
-cp -r rhdh-plugin-development /path/to/project/.cursor/skills/
+cp -r skills/rhdh-plugin-development ~/.cursor/skills/      # personal
+cp -r skills/rhdh-plugin-development <project>/.cursor/skills/   # project scoped
 ```
 
-### With Claude / Other Agents
+### Any other agent
 
-Reference the `SKILL.md` file as context when starting a conversation. The agent will follow the patterns and rules defined in the skill and its reference files.
+Each skill is plain Markdown. Point your agent at the `SKILL.md` file as context and it
+will follow the patterns and reference the supporting files as needed.
 
-## Contributing
+## How a skill is built
 
-Each skill follows this structure:
+Skills use progressive disclosure. The agent reads `SKILL.md` first, which stays small
+enough to keep in context, then pulls in reference files only when the task calls for them.
 
 ```
-skill-name/
-├── SKILL.md              # Main entry point (required, <500 lines)
-├── reference-1.md        # Detailed patterns (progressive disclosure)
-├── reference-2.md        # More detail as needed
-└── ...
+rhdh-plugin-development/
+├── SKILL.md                      # entry point: frontmatter, target platform, core rules
+├── monorepo-scaffold.md          # workspace layout and build configuration
+├── backend-patterns.md           # createBackendPlugin, modules, extension points, database
+├── frontend-patterns.md          # createPlugin, routing, API refs, components
+├── dynamic-plugin-packaging.md   # rhdh-cli, OCI publishing, Helm wiring
+└── README.md
 ```
 
-See the [Cursor Skills documentation](https://docs.cursor.com/context/skills) for authoring guidelines.
+The frontmatter is what makes a skill discoverable:
+
+```yaml
+---
+name: rhdh-plugin-development
+description: >-
+  Build full-stack plugins for Red Hat Developer Hub and Backstage...
+  Use when creating, scaffolding, or developing any Backstage or
+  RHDH plugin, module, or extension point.
+---
+```
+
+The `description` is the only part the agent sees until the skill fires, so it carries both
+what the skill does and when to reach for it.
+
+## Writing your own
+
+The format is simple and worth stealing. A few things that matter more than they look:
+
+* **Write the description for retrieval, not for humans.** It is a matching problem. Name
+  the concrete triggers and the artifacts involved.
+* **Keep `SKILL.md` short.** It loads on every match. Push detail into reference files.
+* **State constraints as rules, not prose.** "Always use `v1beta3`, never `v1beta2`" beats a
+  paragraph explaining the history.
+* **Include real examples.** Agents copy far more reliably than they reason from
+  description.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) if you want to add a skill here.
+
+## Related
+
+* [Claude Code agent skills](https://docs.claude.com/en/docs/claude-code/skills)
+* [Cursor skills](https://docs.cursor.com/context/skills)
+* [Backstage software templates](https://backstage.io/docs/features/software-templates/)
 
 ## License
 
-Apache-2.0
+[Apache 2.0](LICENSE)
